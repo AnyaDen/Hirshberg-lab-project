@@ -87,7 +87,7 @@ def graph(title, dataframes, value, times = 5, eng_change = False, temp_change =
             plot.line(x = df_value.index, y = [avg]*len(df_value), legend_label = 'avg temp - ' + str(int(np.around(avg))), color='chocolate')
             box = BoxAnnotation(bottom = avg - error, top = avg + error, fill_alpha=0.2, fill_color='red')
             plot.add_layout(box)
-            print('The error is {0}\nThe total std is {1}\n'.format(error, tot_std))
+            print('The average temperature is is {0} ± {1}\nThe total std is {2}\n'.format(np.around(avg), np.around(error), tot_std))
         else:
             plot = figure(x_axis_label='step', y_axis_label=value, title=title, plot_width=500, plot_height=500)
             plot.dot(x = dataframes[file]['step'].astype(float), y = dataframes[file][value].astype(float), legend_label = file.split('logs\\')[1].split('_log')[0],color=COLORS[count])

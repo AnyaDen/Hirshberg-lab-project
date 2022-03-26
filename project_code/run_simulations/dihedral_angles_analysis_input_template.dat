@@ -1,0 +1,27 @@
+# compute torsional angle between atoms 17,15,9,7
+psi: TORSION ATOMS=17,15,9,7
+# compute torsional angle between atoms 5,7,9,15
+phi: TORSION ATOMS=5,7,9,15
+theta: TORSION ATOMS=6,5,7,9
+
+ctpsi: MATHEVAL ARG=psi FUNC=0.5+0.5*cos(x-1.25) PERIODIC=NO
+ctphi: MATHEVAL ARG=phi FUNC=0.5+0.5*cos(x-1.25) PERIODIC=NO
+cttheta: MATHEVAL ARG=theta FUNC=0.5+0.5*cos(x-1.25) PERIODIC=NO
+
+cv: COMBINE ARG=ctpsi,ctphi,cttheta COEFFICIENTS=0.027172088,0.998279846,0.051597504 PERIODIC=NO
+metad: METAD ARG=cv HEIGHT=1.2 BIASFACTOR=6 SIGMA=0.03 PACE=500 GRID_MIN=-pi GRID_MAX=pi TEMP=300 CALC_RCT
+PRINT ARG=psi,phi,theta,ctpsi,ctphi,cttheta,cv,metad.* STRIDE=1000 FILE=c7eq_nvt_metad_dt_0.5_20ns_dihedrals_{i}
+
+# Use the metadynamics bias as argument
+as: REWEIGHT_BIAS ARG=metad.rbias TEMP=300
+# Calculate histograms of phi and psi dihedrals every 50 steps
+# using the weights obtained from the metadynamics bias potentials (umbrella-sampling-like reweighting)
+# Look at the manual to understand the parameters of the HISTOGRAM action!
+hhphi: HISTOGRAM ARG=phi STRIDE=50 GRID_MIN=-pi GRID_MAX=pi GRID_BIN=50 BANDWIDTH=0.05 LOGWEIGHTS=as 
+hhpsi: HISTOGRAM ARG=psi STRIDE=50 GRID_MIN=-pi GRID_MAX=pi GRID_BIN=50 BANDWIDTH=0.05 LOGWEIGHTS=as 
+# Convert histograms h(s) to free energies F(s) = -kBT * log(h(s))
+ffphi: CONVERT_TO_FES GRID=hhphi TEMP=300
+ffpsi: CONVERT_TO_FES GRID=hhpsi TEMP=300
+# Print out the free energies F(s) to file once the entire trajectory is processed
+DUMPGRID GRID=ffphi STRIDE=400000 FILE=ffphi_{i}.dat 
+DUMPGRID GRID=ffpsi STRIDE=400000 FILE=ffpsi_{i}.dat 
